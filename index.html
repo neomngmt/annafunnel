@@ -20,10 +20,10 @@
   [hidden] { display: none !important; }
 
   .gate { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
-  .gate h1 { font-size: 22px; margin: 0; }
   .gate p { margin: 0; color: var(--muted); }
+  .gate-avatar { width: 112px; height: 112px; font-size: 40px; }
+  .gate-name { font-size: 20px; }
   .primary { width: 100%; max-width: 320px; padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; text-decoration: none; display: block; text-align: center; }
-  .plain { background: none; border: 0; color: var(--muted); text-decoration: underline; cursor: pointer; }
 
   .head { position: sticky; top: 0; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: var(--accent); display: grid; place-items: center; font-weight: 700; }
@@ -60,10 +60,10 @@
 <body>
 <div class="app">
   <section class="gate" id="gate">
-    <h1 id="gateTitle"></h1>
+    <div class="avatar gate-avatar" id="gateAvatar"></div>
+    <div class="name gate-name"><span id="gateName"></span><span class="ai-badge">AI</span></div>
     <p id="gateText"></p>
     <button class="primary" id="gateYes"></button>
-    <button class="plain" id="gateNo"></button>
   </section>
 
   <section id="chat" hidden style="display:flex;flex-direction:column;flex:1;min-height:0">
@@ -92,14 +92,12 @@ const source = params.get("src") || "direct";
 
 const TEXT = {
   cs: {
-    gateTitle: "Jen pro dospělé", gateText: "Tahle stránka je pro lidi od 18 let.",
-    gateYes: "Je mi 18+", gateNo: "Je mi méně", gateBye: "Tahle stránka pro tebe zatím není.",
+    gateYes: "Začít chat (18+)",
     send: "Poslat", placeholder: "Napiš zprávu", open: "Otevřít OnlyFans",
     ended: "Chat skončil", error: "Něco se pokazilo, zkus to za chvilku.", tooMany: "Teď je tu moc lidí, zkus to později.", missing: "Tahle stránka neexistuje.",
   },
   en: {
-    gateTitle: "Adults only", gateText: "This page is for people aged 18 and over.",
-    gateYes: "I'm 18+", gateNo: "I'm younger", gateBye: "This page isn't for you yet.",
+    gateYes: "Start chat (18+)",
     send: "Send", placeholder: "Write a message", open: "Open OnlyFans",
     ended: "Chat ended", error: "Something went wrong, try again in a moment.", tooMany: "It's busy right now, try again later.", missing: "This page doesn't exist.",
   },
@@ -107,10 +105,7 @@ const TEXT = {
 let t = params.get("lang") === "en" ? TEXT.en : TEXT.cs;
 const $ = (id) => document.getElementById(id);
 
-$("gateTitle").textContent = t.gateTitle;
-$("gateText").textContent = t.gateText;
 $("gateYes").textContent = t.gateYes;
-$("gateNo").textContent = t.gateNo;
 
 let sessionId = null;
 const history = [];
@@ -186,10 +181,25 @@ function endChat() {
   notice(t.ended);
 }
 
-$("gateNo").addEventListener("click", () => {
-  $("gateText").textContent = t.gateBye;
-  $("gateYes").hidden = true;
-  $("gateNo").hidden = true;
+// Fill the start screen with her name and photo. No session opens until the button is pressed.
+api({ action: "page", slug }).then((p) => {
+  t = TEXT[p.language] || t;
+  document.documentElement.lang = p.language;
+  document.title = p.name;
+  $("gateName").textContent = p.name;
+  $("gateYes").textContent = t.gateYes;
+  if (/^https:\/\//.test(p.photoUrl || "")) {
+    const img = document.createElement("img");
+    img.className = "avatar gate-avatar";
+    img.alt = "";
+    img.src = p.photoUrl;
+    $("gateAvatar").replaceWith(img);
+  } else {
+    $("gateAvatar").textContent = p.name.charAt(0);
+  }
+}).catch((e) => {
+  $("gateText").textContent = e.status === 404 ? t.missing : t.error;
+  if (e.status === 404) $("gateYes").hidden = true;
 });
 
 $("gateYes").addEventListener("click", async () => {
