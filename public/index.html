@@ -28,6 +28,7 @@
   .gate p { margin: 0; color: var(--muted); }
   .gate-avatar { width: 112px; height: 112px; font-size: 40px; }
   .gate-name { font-size: 20px; }
+  .gate .gate-note { font-size: 13px; }
   .primary { width: 100%; max-width: 320px; padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; text-decoration: none; display: block; text-align: center; }
 
   .head { flex: none; display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
@@ -70,6 +71,7 @@
     <div class="name gate-name"><span id="gateName"></span></div>
     <p id="gateText"></p>
     <button class="primary" id="gateYes"></button>
+    <p class="gate-note" id="gateNote"></p>
   </section>
 
   <section id="chat" hidden style="display:flex;flex-direction:column;flex:1;min-height:0">
@@ -98,12 +100,12 @@ const source = params.get("src") || "direct";
 
 const TEXT = {
   cs: {
-    gateYes: "Začít chat (18+)",
+    gateYes: "Začít chat", gateNote: "Pokračováním potvrzuješ, že je ti 18+.",
     send: "Poslat", placeholder: "Napiš zprávu", open: "Otevřít OnlyFans",
     ended: "Chat skončil", error: "Něco se pokazilo, zkus to za chvilku.", tooMany: "Teď je tu moc lidí, zkus to později.", missing: "Tahle stránka neexistuje.",
   },
   en: {
-    gateYes: "Start chat (18+)",
+    gateYes: "Start chat", gateNote: "By continuing you confirm you are 18+.",
     send: "Send", placeholder: "Write a message", open: "Open OnlyFans",
     ended: "Chat ended", error: "Something went wrong, try again in a moment.", tooMany: "It's busy right now, try again later.", missing: "This page doesn't exist.",
   },
@@ -112,6 +114,7 @@ let t = params.get("lang") === "en" ? TEXT.en : TEXT.cs;
 const $ = (id) => document.getElementById(id);
 
 $("gateYes").textContent = t.gateYes;
+$("gateNote").textContent = t.gateNote;
 
 // Keep the app inside the part of the screen the keyboard leaves free, with the newest message in view.
 function fit() {
@@ -217,6 +220,7 @@ api({ action: "page", slug }).then((p) => {
   document.title = p.name;
   $("gateName").textContent = p.name;
   $("gateYes").textContent = t.gateYes;
+  $("gateNote").textContent = t.gateNote;
   if (/^https:\/\//.test(p.photoUrl || "")) {
     const img = document.createElement("img");
     img.className = "avatar gate-avatar";

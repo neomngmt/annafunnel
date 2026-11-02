@@ -29,9 +29,9 @@ test("the start screen gets only public info and opens no session", async () => 
   assert.equal((await handleRequest({ action: "page", slug: "nope" }, "1.1.1.1", deps)).status, 404);
 });
 
-test("the start button says 18+", () => {
+test("the start screen states the 18+ condition", () => {
   const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
-  assert.match(html, /gateYes: "Začít chat \(18\+\)"/);
+  assert.match(html, /gateNote: "Pokračováním potvrzuješ, že je ti 18\+\."/);
   assert.match(html, /ageConfirmed: true/);
 });
 
