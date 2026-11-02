@@ -1,5 +1,6 @@
--- Anna's chat page. Before running: model_name must match models.name exactly,
--- and of_links needs her real tracking links (no valid link means no button).
+-- Anna's chat page. model_name is the name shown in the chat. When a model leaves,
+-- remove her page and photos here by hand (active = false or delete).
+-- of_links needs her real links (no valid link means no button).
 -- of_links maps a ?src= value to a link, "default" is the fallback.
 -- From her chatter sheet, deliberately left to the human chatters on OF:
 -- birth date, custom prices, worn items, submissive and roleplay details.

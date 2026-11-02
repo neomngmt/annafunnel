@@ -51,19 +51,14 @@ const deps: Deps = {
       .from("funnel_pages").select("*").eq("slug", slug).eq("active", true).maybeSingle();
     if (error) throw error;
     if (!page) return null;
-    // A model removed from Model Manager takes her page down with her.
-    const { data: model, error: modelErr } = await supabase
-      .from("models").select("name, bio, note").eq("name", page.model_name).maybeSingle();
-    if (modelErr) throw modelErr;
-    if (!model) return null;
     return {
       slug: page.slug,
-      name: model.name,
+      name: page.model_name,
       language: page.language,
       opener: page.opener,
       photoUrl: page.photo_url,
       teasePhotos: page.tease_photos || [],
-      persona: [model.bio, model.note, page.persona].filter(Boolean).join(" | "),
+      persona: page.persona || "",
       style: page.style || "",
       offer: page.offer || "",
       ofLinks: page.of_links || {},

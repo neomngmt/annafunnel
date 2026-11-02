@@ -1,5 +1,5 @@
 {
-  "name": "zion-funnel",
+  "name": "funnel-chat",
   "version": "1.0.0",
   "description": "Chat page per model: 18+ step, chat with her labelled AI version, OnlyFans link. Page URL: `?m=<slug>&src=<source>`.",
   "main": "index.js",

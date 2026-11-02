@@ -1,4 +1,4 @@
-# Zion funnel chat
+# Funnel chat
 
 Chat page per model: 18+ step, chat with her labelled AI version, OnlyFans link. Page URL: `?m=<slug>&src=<source>`.
 
@@ -22,7 +22,7 @@ node --test dev/core.test.mjs
 
 ## Going live
 
-1. Run `sql/funnel.sql` in the Supabase SQL editor and insert a row into `funnel_pages` per model. `model_name` must match `models.name`.
+1. In this project's own Supabase project, run `sql/funnel.sql` and `sql/storage.sql` in the SQL editor, upload the photos to the `funnel` bucket, then insert a row into `funnel_pages` per model with full photo URLs (see `sql/pages/anna.sql`). Each model gets her own file in `sql/pages` and her own page at `?m=<slug>`.
 2. Set the secrets listed at the top of `supabase/functions/funnel-chat/index.ts`.
 3. Deploy with `supabase functions deploy funnel-chat --no-verify-jwt`.
 4. Put the function URL in the `funnel-api` meta tag of `public/index.html` and host that file on its own domain.
