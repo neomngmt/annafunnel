@@ -4,7 +4,6 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { readFileSync } from "node:fs";
-import { basename } from "node:path";
 import { handleRequest, modelRequest, readModelResponse } from "../supabase/functions/funnel-chat/core.ts";
 import { fakeDeps } from "./fake.mjs";
 
@@ -62,12 +61,7 @@ createServer(async (req, res) => {
     res.writeHead(302, { Location: "/?m=anna&src=ig" }).end();
     return;
   }
-  if (req.url.startsWith("/models/")) {
-    const photo = await readFile(new URL(`../public/models/${basename(req.url)}`, import.meta.url)).catch(() => null);
-    if (photo) res.writeHead(200, { "Content-Type": "image/jpeg" }).end(photo);
-    else res.writeHead(404).end();
-    return;
-  }
-  const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
+  const page = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
+  const html = page.replace(/(name="funnel-api" content=")[^"]*/, "$1/api");
   res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" }).end(live ? html : html.replace('<div class="app">', `<div class="app">${BANNER}`));
 }).listen(PORT, () => console.log(`${live ? "real Claude" : "scripted bot"}: http://localhost:${PORT}/?m=anna&src=ig`));

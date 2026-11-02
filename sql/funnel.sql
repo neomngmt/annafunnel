@@ -36,6 +36,10 @@ create index if not exists funnel_sessions_ip_idx on funnel_sessions (ip_hash, c
 alter table funnel_pages enable row level security;
 alter table funnel_sessions enable row level security;
 
+-- New tables are not exposed automatically in this project, so grant only the edge function.
+grant select on funnel_pages to service_role;
+grant select, insert, update on funnel_sessions to service_role;
+
 create or replace view funnel_stats with (security_invoker = true) as
 select
   slug,
