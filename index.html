@@ -2,7 +2,8 @@
 <html lang="cs">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#1a181e">
 <meta name="robots" content="noindex">
 <!-- The funnel-chat function URL. The local dev server swaps in its own /api. -->
 <meta name="funnel-api" content="https://eschqmjjmnqllejbcpab.supabase.co/functions/v1/funnel-chat">
@@ -13,10 +14,14 @@
     --text: #f5f3f7; --muted: #a29eab; --line: #2c2932;
   }
   * { box-sizing: border-box; }
-  html, body { height: 100%; margin: 0; }
+  html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; -webkit-text-size-adjust: 100%; }
+  html { background: var(--bg); }
+  * { -webkit-tap-highlight-color: transparent; }
+  button, a { touch-action: manipulation; }
   body { background: var(--bg); color: var(--text); font: 16px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   button, input { font: inherit; }
-  .app { height: 100dvh; max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; }
+  /* Pinned to the visible area, which script.fit() shrinks when the keyboard opens. */
+  .app { position: fixed; top: 0; left: 0; right: 0; height: var(--app-height, 100dvh); max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; }
   [hidden] { display: none !important; }
 
   .gate { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px; text-align: center; }
@@ -25,7 +30,7 @@
   .gate-name { font-size: 20px; }
   .primary { width: 100%; max-width: 320px; padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; text-decoration: none; display: block; text-align: center; }
 
-  .head { position: sticky; top: 0; display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .head { flex: none; display: flex; align-items: center; gap: 12px; padding: calc(10px + env(safe-area-inset-top)) 16px 10px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex: none; background: var(--accent); display: grid; place-items: center; font-weight: 700; }
   .avatar-wrap { position: relative; flex: none; width: 44px; height: 44px; }
   .online { position: absolute; right: -1px; bottom: -1px; width: 13px; height: 13px; border-radius: 50%; background: #22c55e; border: 2px solid var(--surface); }
@@ -36,7 +41,8 @@
   .name { display: flex; align-items: center; gap: 6px; font-weight: 600; }
   .ai-badge { padding: 1px 6px; border-radius: 5px; background: var(--text); color: var(--bg); font-size: 13px; font-weight: 700; line-height: 1.4; }
 
-  .log { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .log { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .log > * { flex: none; }
   .msg { max-width: 80%; padding: 9px 13px; border-radius: 16px; overflow-wrap: anywhere; white-space: pre-wrap; }
   .msg.assistant { align-self: flex-start; background: var(--bubble); border-bottom-left-radius: 4px; }
   .msg.user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
@@ -46,12 +52,12 @@
   .msg.typing i:nth-child(3) { animation-delay: .4s; }
   @keyframes typing { 0%, 60%, 100% { opacity: .35; transform: none; } 30% { opacity: 1; transform: translateY(-3px); } }
   @media (prefers-reduced-motion: reduce) { .msg.typing i { animation: none; } }
-  .tease { align-self: flex-start; display: block; width: 70%; max-width: 280px; border-radius: 16px; border-bottom-left-radius: 4px; }
+  .tease { align-self: flex-start; display: block; width: 70%; max-width: 280px; max-height: 60vh; object-fit: cover; border-radius: 16px; border-bottom-left-radius: 4px; }
   .link-card { align-self: stretch; padding: 8px 0; }
   .link-card .primary { max-width: none; }
   .notice { align-self: center; color: var(--muted); font-size: 13px; text-align: center; }
 
-  form { display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); }
+  form { flex: none; display: flex; gap: 8px; padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--surface); }
   form input { flex: 1; min-width: 0; padding: 11px 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--bg); color: var(--text); font-size: 16px; }
   form button { padding: 0 16px; border: 0; border-radius: 20px; background: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
   form button:disabled { opacity: .5; cursor: default; }
@@ -61,7 +67,7 @@
 <div class="app">
   <section class="gate" id="gate">
     <div class="avatar gate-avatar" id="gateAvatar"></div>
-    <div class="name gate-name"><span id="gateName"></span><span class="ai-badge">AI</span></div>
+    <div class="name gate-name"><span id="gateName"></span></div>
     <p id="gateText"></p>
     <button class="primary" id="gateYes"></button>
   </section>
@@ -78,8 +84,8 @@
     </header>
     <div class="log" id="log" aria-live="polite"></div>
     <form id="form">
-      <input id="input" maxlength="400" autocomplete="off" aria-label="Message">
-      <button id="send"></button>
+      <input id="input" maxlength="400" autocomplete="off" autocapitalize="sentences" enterkeyhint="send" aria-label="Message">
+      <button id="send" type="submit"></button>
     </form>
   </section>
 </div>
@@ -106,6 +112,29 @@ let t = params.get("lang") === "en" ? TEXT.en : TEXT.cs;
 const $ = (id) => document.getElementById(id);
 
 $("gateYes").textContent = t.gateYes;
+
+// Keep the app inside the part of the screen the keyboard leaves free, with the newest message in view.
+function fit() {
+  const view = window.visualViewport;
+  const app = document.querySelector(".app");
+  document.documentElement.style.setProperty("--app-height", `${view ? view.height : window.innerHeight}px`);
+  app.style.transform = view && view.offsetTop ? `translateY(${view.offsetTop}px)` : "";
+  window.scrollTo(0, 0);
+  $("log").scrollTop = $("log").scrollHeight;
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", fit);
+  window.visualViewport.addEventListener("scroll", fit);
+}
+window.addEventListener("orientationchange", fit);
+fit();
+
+// Tapping Send must not take focus from the input, or the keyboard closes after every message.
+$("send").addEventListener("mousedown", (e) => e.preventDefault());
+$("send").addEventListener("touchend", (e) => {
+  e.preventDefault();
+  $("form").requestSubmit();
+});
 
 let sessionId = null;
 const history = [];
@@ -276,8 +305,10 @@ async function answer() {
     if (r.ended) {
       pending.length = 0;
       // With the link out, the button is the last thing on screen.
+      $("input").blur();
       if (r.link) $("form").hidden = true;
       else endChat();
+      fit();
     }
   } catch (e) {
     typing.remove();
