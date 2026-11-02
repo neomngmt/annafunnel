@@ -1,0 +1,17 @@
+{
+  "name": "zion-funnel",
+  "version": "1.0.0",
+  "description": "Chat page per model: 18+ step, chat with her labelled AI version, OnlyFans link. Page URL: `?m=<slug>&src=<source>`.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "private": "true",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.3.0"
+  },
+  "type": "module"
+}
