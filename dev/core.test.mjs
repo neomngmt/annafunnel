@@ -172,6 +172,13 @@ test("the link never goes out before the photo has been shown", async () => {
   assert.equal(closing.body.followUp, "jdeš?");
 });
 
+test("the link always comes with a closing line, even if the model wrote none", async () => {
+  const deps = fakeDeps(answer({}));
+  const r = await send(deps, await open(deps), "mas of?");
+  assert.ok(r.body.link);
+  assert.match(r.body.followUp, /hlavně jen na of/);
+});
+
 test("a link after an earlier photo does not repeat it", async () => {
   let turn = 0;
   const deps = fakeDeps(async () => (++turn === 1

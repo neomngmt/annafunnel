@@ -59,11 +59,13 @@ const STRINGS = {
     minor: "Tenhle chat je jen pro dospělé, takže tady končíme. Měj se hezky.",
     limit: "Tady už chat končí. Díky za pokec.",
     refusal: "Tohle radši nechme být. O čem si chceš povídat dál?",
+    closing: "píšu si s lidma hlavně jen na of, tak přijď",
   },
   en: {
     minor: "This chat is for adults only, so we have to stop here. Take care.",
     limit: "This chat ends here. Thanks for talking.",
     refusal: "Let's leave that one. What else do you want to talk about?",
+    closing: "i really only chat with people on of, so come over",
   },
 };
 
@@ -309,7 +311,8 @@ async function message(body: Record<string, unknown>, deps: Deps): Promise<Resul
     photoSent: session.photoSent || !!photo,
     blocked: stopped,
   });
-  const closing = link ? { followUp: cleanReply(result?.follow_up || "") } : {};
+  // The chat ends with the link, so it always closes with the line about OnlyFans.
+  const closing = link ? { followUp: cleanReply(result?.follow_up || "") || t.closing } : {};
   return { status: 200, body: { reply, link, photo, ...closing, ended: stopped || !!link || turns >= LIMITS.maxTurns } };
 }
 
