@@ -29,6 +29,12 @@ test("the start screen gets only public info and opens no session", async () => 
   assert.equal((await handleRequest({ action: "page", slug: "nope" }, "1.1.1.1", deps)).status, 404);
 });
 
+test("Anna's start screen does not wait for the server", () => {
+  const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+  assert.match(html, /anna: \{ name: "Anna", language: "cs", photoUrl: "https:/);
+  assert.match(html, /if \(Object\.hasOwn\(PAGES, slug\)\)/);
+});
+
 test("the start screen states the 18+ condition", () => {
   const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
   assert.match(html, /gateNote: "Pokračováním potvrzuješ, že je ti 18\+\."/);

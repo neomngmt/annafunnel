@@ -7,6 +7,7 @@
 <meta name="robots" content="noindex">
 <!-- The funnel-chat function URL. The local dev server swaps in its own /api. -->
 <meta name="funnel-api" content="https://eschqmjjmnqllejbcpab.supabase.co/functions/v1/funnel-chat">
+<link rel="preconnect" href="https://eschqmjjmnqllejbcpab.supabase.co">
 <title>Chat</title>
 <style>
   :root {
@@ -34,8 +35,8 @@
   .gate > :nth-child(5) { animation-delay: .3s; }
   .gate-ring { position: relative; padding: 5px; border-radius: 50%; }
   .gate-ring::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#ff5f9e, #ffb14c, #b14cff, #ff5f9e); animation: spin 3s linear infinite; }
-  .gate-avatar { position: relative; width: 112px; height: 112px; font-size: 40px; border: 3px solid var(--bg); }
-  .gate-name { font-size: 20px; }
+  .gate-ring .gate-avatar { position: relative; width: 180px; height: 180px; font-size: 64px; border: 4px solid var(--bg); background: var(--surface); }
+  .gate-name { font-size: 24px; }
   .gate .gate-note { font-size: 13px; }
   .primary { position: relative; overflow: hidden; width: 100%; max-width: 320px; padding: 14px; border: 0; border-radius: 12px; background: linear-gradient(120deg, #ff5f9e, var(--accent) 50%, #b14cff); color: #fff; font-weight: 600; cursor: pointer; text-decoration: none; display: block; text-align: center; transition: transform .12s; }
   .primary:active { transform: scale(.96); }
@@ -271,8 +272,16 @@ function endChat() {
   notice(t.ended);
 }
 
-// Fill the start screen with her name and photo. No session opens until the button is pressed.
-api({ action: "page", slug }).then((p) => {
+// Known pages draw their start screen straight away. Any other slug asks the server,
+// which is slower. No session opens until the button is pressed.
+const PAGES = {
+  anna: { name: "Anna", language: "cs", photoUrl: "https://eschqmjjmnqllejbcpab.supabase.co/storage/v1/object/public/funnel/anna/anna-avatar.jpg" },
+};
+
+let shown = null;
+
+function showStart(p) {
+  shown = p;
   t = TEXT[p.language] || t;
   document.documentElement.lang = p.language;
   document.title = p.name;
@@ -283,47 +292,64 @@ api({ action: "page", slug }).then((p) => {
     const img = document.createElement("img");
     img.className = "avatar gate-avatar";
     img.alt = "";
+    img.fetchPriority = "high";
     img.src = p.photoUrl;
     $("gateAvatar").replaceWith(img);
   } else {
     $("gateAvatar").textContent = p.name.charAt(0);
   }
-}).catch((e) => {
-  $("gateText").textContent = e.status === 404 ? t.missing : t.error;
-  if (e.status === 404) $("gateYes").hidden = true;
-});
+}
 
+if (Object.hasOwn(PAGES, slug)) {
+  showStart(PAGES[slug]);
+} else {
+  api({ action: "page", slug }).then(showStart).catch((e) => {
+    $("gateText").textContent = e.status === 404 ? t.missing : t.error;
+    if (e.status === 404) $("gateYes").hidden = true;
+  });
+}
+
+function fillChat(p) {
+  t = TEXT[p.language] || t;
+  document.documentElement.lang = p.language;
+  document.title = p.name;
+  $("name").textContent = p.name;
+  $("send").textContent = t.send;
+  $("input").placeholder = t.placeholder;
+  if (/^https:\/\//.test(p.photoUrl || "")) {
+    const img = document.createElement("img");
+    img.className = "avatar";
+    img.alt = "";
+    img.src = p.photoUrl;
+    $("avatar").replaceWith(img);
+  } else {
+    $("avatar").textContent = p.name.charAt(0);
+  }
+}
+
+// The chat opens on the tap itself. The session starts behind the typing dots,
+// so a slow server only makes her "type" a little longer.
 $("gateYes").addEventListener("click", async () => {
-  $("gateYes").disabled = true;
+  const opened = Date.now();
+  $("gateText").textContent = "";
+  $("gate").hidden = true;
+  $("chat").hidden = false;
+  $("send").disabled = true;
+  if (shown && !$("name").textContent) fillChat(shown);
+  $("input").focus();
+  const typing = addTyping();
   try {
     const s = await api({ action: "start", slug, source, ageConfirmed: true });
     sessionId = s.sessionId;
-    t = TEXT[s.language] || t;
-    document.documentElement.lang = s.language;
-    document.title = s.name;
-    $("name").textContent = s.name;
-    $("send").textContent = t.send;
-    $("input").placeholder = t.placeholder;
-    if (/^(https:\/\/|\/models\/)/.test(s.photoUrl || "")) {
-      const img = document.createElement("img");
-      img.className = "avatar";
-      img.alt = "";
-      img.src = s.photoUrl;
-      $("avatar").replaceWith(img);
-    } else {
-      $("avatar").textContent = s.name.charAt(0);
-    }
-    $("gate").hidden = true;
-    $("chat").hidden = false;
-    $("send").disabled = true;
-    $("input").focus();
-    const typing = addTyping();
-    await new Promise((r) => setTimeout(r, 1600));
+    if (!$("name").textContent) fillChat(s);
+    await new Promise((r) => setTimeout(r, Math.max(0, 1200 - (Date.now() - opened))));
     typing.remove();
     add("assistant", s.opener);
     $("send").disabled = false;
   } catch (e) {
-    $("gateYes").disabled = false;
+    typing.remove();
+    $("chat").hidden = true;
+    $("gate").hidden = false;
     $("gateText").textContent = e.status === 404 ? t.missing : e.status === 429 ? t.tooMany : t.error;
   }
 });

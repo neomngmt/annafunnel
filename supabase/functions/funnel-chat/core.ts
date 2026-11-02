@@ -251,8 +251,10 @@ async function start(body: Record<string, unknown>, ip: string, deps: Deps): Pro
 
   const ipHash = await hashIp(ip, deps.ipSalt);
   const now = Date.now();
-  const perIp = await deps.countSessions(new Date(now - 60 * 60 * 1000), ipHash);
-  const perDay = await deps.countSessions(new Date(now - 24 * 60 * 60 * 1000));
+  const [perIp, perDay] = await Promise.all([
+    deps.countSessions(new Date(now - 60 * 60 * 1000), ipHash),
+    deps.countSessions(new Date(now - 24 * 60 * 60 * 1000)),
+  ]);
   if (perIp >= LIMITS.sessionsPerIpPerHour || perDay >= (deps.dailySessionCap ?? LIMITS.sessionsPerDay)) {
     return { status: 429, body: { error: "Too many chats" } };
   }
