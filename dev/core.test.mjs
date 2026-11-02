@@ -21,6 +21,20 @@ test("a chat cannot open without the age step", async () => {
   assert.equal(r.status, 400);
 });
 
+test("the start screen gets only public info and opens no session", async () => {
+  const deps = fakeDeps(said("continue"), { ...TEST_PAGE, teasePhotos: ["/models/a.jpg"], persona: "tajne" });
+  const r = await handleRequest({ action: "page", slug: "test" }, "1.1.1.1", deps);
+  assert.deepEqual(Object.keys(r.body).sort(), ["language", "name", "photoUrl"]);
+  assert.equal(deps.sessions.size, 0);
+  assert.equal((await handleRequest({ action: "page", slug: "nope" }, "1.1.1.1", deps)).status, 404);
+});
+
+test("the start button says 18+", () => {
+  const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
+  assert.match(html, /gateYes: "Začít chat \(18\+\)"/);
+  assert.match(html, /ageConfirmed: true/);
+});
+
 test("a removed or unknown page returns 404", async () => {
   const r = await handleRequest({ action: "start", slug: "nope", ageConfirmed: true }, "1.1.1.1", fakeDeps(said("continue")));
   assert.equal(r.status, 404);

@@ -228,10 +228,18 @@ async function hashIp(ip: string, salt: string): Promise<string> {
 }
 
 export async function handleRequest(body: Record<string, unknown>, ip: string, deps: Deps): Promise<Result> {
+  if (body?.action === "page") return pageInfo(body, deps);
   if (body?.action === "start") return start(body, ip, deps);
   if (body?.action === "message") return message(body, deps);
   if (body?.action === "click") return click(body, deps);
   return { status: 400, body: { error: "Unknown action" } };
+}
+
+// What the start screen shows before anyone has confirmed they are 18+.
+async function pageInfo(body: Record<string, unknown>, deps: Deps): Promise<Result> {
+  const page = typeof body.slug === "string" ? await deps.getPage(body.slug) : null;
+  if (!page) return { status: 404, body: { error: "Page not found" } };
+  return { status: 200, body: { name: page.name, language: page.language, photoUrl: page.photoUrl } };
 }
 
 async function start(body: Record<string, unknown>, ip: string, deps: Deps): Promise<Result> {
