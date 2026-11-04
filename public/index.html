@@ -58,7 +58,6 @@
   @media (prefers-reduced-motion: reduce) { .online::after { animation: none; opacity: 0; } }
   .who { min-width: 0; }
   .name { display: flex; align-items: center; gap: 6px; font-weight: 600; }
-  .ai-badge { padding: 0 4px; border-radius: 4px; border: 1px solid var(--muted); color: var(--muted); font-size: 11px; font-weight: 500; line-height: 1.4; }
 
   .log { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
   .log > * { flex: none; }
@@ -111,7 +110,7 @@
         <span class="online"></span>
       </div>
       <div class="who">
-        <div class="name"><span id="name"></span><span class="ai-badge">AI</span></div>
+        <div class="name"><span id="name"></span></div>
       </div>
     </header>
     <div class="log" id="log" aria-live="polite"></div>
@@ -130,12 +129,12 @@ const source = params.get("src") || "direct";
 
 const TEXT = {
   cs: {
-    gateYes: "Začít chat", gateNote: "Pokračováním potvrzuješ, že je ti 18+.",
+    gateYes: "Začít chat", gateNote: "Píšeš si s AI. Pokračováním potvrzuješ, že je ti 18+.",
     send: "Poslat", placeholder: "Napiš zprávu", open: "Otevřít OnlyFans",
     ended: "Chat skončil", error: "Něco se pokazilo, zkus to za chvilku.", tooMany: "Teď je tu moc lidí, zkus to později.", missing: "Tahle stránka neexistuje.",
   },
   en: {
-    gateYes: "Start chat", gateNote: "By continuing you confirm you are 18+.",
+    gateYes: "Start chat", gateNote: "You are chatting with an AI. By continuing you confirm you are 18+.",
     send: "Send", placeholder: "Write a message", open: "Open OnlyFans",
     ended: "Chat ended", error: "Something went wrong, try again in a moment.", tooMany: "It's busy right now, try again later.", missing: "This page doesn't exist.",
   },
