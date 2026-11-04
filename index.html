@@ -5,9 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="theme-color" content="#1a181e">
 <meta name="robots" content="noindex">
-<!-- The funnel-chat function URL. The local dev server swaps in its own /api. -->
-<meta name="funnel-api" content="https://eschqmjjmnqllejbcpab.supabase.co/functions/v1/funnel-chat">
-<link rel="preconnect" href="https://eschqmjjmnqllejbcpab.supabase.co">
 <title>Chat</title>
 <style>
   :root {
@@ -111,7 +108,7 @@
         <span class="online"></span>
       </div>
       <div class="who">
-        <div class="name"><span id="name"></span><span class="ai-badge">AI</span></div>
+        <div class="name"><span id="name"></span></div>
       </div>
     </header>
     <div class="log" id="log" aria-live="polite"></div>
@@ -123,10 +120,9 @@
 </div>
 
 <script>
-const API = document.querySelector('meta[name="funnel-api"]').content;
 const params = new URLSearchParams(location.search);
-const slug = params.get("m") || "";
-const source = params.get("src") || "direct";
+const slug = "ukazka";
+const source = "direct";
 
 const TEXT = {
   cs: {
@@ -176,11 +172,22 @@ $("send").addEventListener("touchend", (e) => {
 let sessionId = null;
 const history = [];
 
+// Sketch only: scripted replies instead of the server, so nothing leaves this page.
+const PLACEHOLDER_PHOTO = "data:image/svg+xml," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="560" height="700"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5f9e"/><stop offset="1" stop-color="#b14cff"/></linearGradient></defs><rect width="560" height="700" fill="url(#g)"/><text x="280" y="360" fill="#fff" font-family="sans-serif" font-size="34" font-weight="700" text-anchor="middle">SEM PŘIJDE FOTKA</text></svg>'
+);
+const SCRIPT = [
+  { reply: "hmm tak to jsem ráda že jsi napsal 😏 co teď děláš?" },
+  { reply: "to zní dobře.. já jsem doma sama a nudím se 🙈" },
+  { photo: PLACEHOLDER_PHOTO, reply: "tak tady máš něco malýho ať víš s kým si píšeš 😘" },
+  { reply: "víc už ti ukážu jen tam 😈", followUp: "píšu si hlavně na OF, tak se stav", link: "#", ended: true },
+];
+let step = 0;
+
 async function api(body) {
-  const resp = await fetch(API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-  const json = await resp.json().catch(() => ({}));
-  if (!resp.ok) throw Object.assign(new Error(json.error || "Request failed"), { status: resp.status });
-  return json;
+  await new Promise((r) => setTimeout(r, 900));
+  if (body.action === "start") return { sessionId: "nacrt", ...PAGES.ukazka, opener: "Čaukyy odkud jsi mě našel?" };
+  return SCRIPT[Math.min(step++, SCRIPT.length - 1)];
 }
 
 function buzz(pattern) {
@@ -257,8 +264,9 @@ function addLink(url) {
   a.target = "_blank";
   a.rel = "noopener";
   a.textContent = t.open;
-  a.addEventListener("click", () => {
-    fetch(API, { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "click", sessionId }) }).catch(() => {});
+  a.addEventListener("click", (e) => {
+    e.preventDefault();
+    notice("Tady se otevře odkaz modelky.");
   });
   wrap.append(a);
   $("log").append(wrap);
@@ -275,7 +283,7 @@ function endChat() {
 // Known pages draw their start screen straight away. Any other slug asks the server,
 // which is slower. No session opens until the button is pressed.
 const PAGES = {
-  anna: { name: "Anna", language: "cs", photoUrl: "https://eschqmjjmnqllejbcpab.supabase.co/storage/v1/object/public/funnel/anna/anna-avatar.jpg" },
+  ukazka: { name: "Anna", language: "cs", photoUrl: "https://eschqmjjmnqllejbcpab.supabase.co/storage/v1/object/public/funnel/anna/anna-avatar.jpg" },
 };
 
 let shown = null;
@@ -381,7 +389,7 @@ async function answer() {
   try {
     const r = await api({ action: "message", sessionId, text, history });
     typing.remove();
-    if (/^(https:\/\/|\/models\/)/.test(r.photo || "")) {
+    if (/^data:image\//.test(r.photo || "")) {
       addPhoto(r.photo);
       await afterTyping(r.reply);
     } else {
