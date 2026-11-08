@@ -8,6 +8,8 @@
 <!-- The funnel-chat function URL. The local dev server swaps in its own /api. -->
 <meta name="funnel-api" content="https://eschqmjjmnqllejbcpab.supabase.co/functions/v1/funnel-chat">
 <link rel="preconnect" href="https://eschqmjjmnqllejbcpab.supabase.co">
+<!-- Anna is the only page so far; with more models, preload only the one in ?m=. -->
+<link rel="preload" as="image" href="models/anna/avatar.jpg" fetchpriority="high">
 <title>Chat</title>
 <style>
   :root {
@@ -278,7 +280,7 @@ function endChat() {
 // Known pages draw their start screen straight away. Any other slug asks the server,
 // which is slower. No session opens until the button is pressed.
 const PAGES = {
-  anna: { name: "Anna", language: "cs", photoUrl: "https://eschqmjjmnqllejbcpab.supabase.co/storage/v1/object/public/funnel/anna/anna-avatar.jpg" },
+  anna: { name: "Anna", language: "cs", photoUrl: "https://neomngmt.github.io/annafunnel/models/anna/avatar.jpg" },
 };
 
 let shown = null;
