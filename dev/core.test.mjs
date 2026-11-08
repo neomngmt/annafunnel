@@ -102,13 +102,13 @@ test("the chat ends with the link, with no further model calls", async () => {
   let calls = 0;
   const deps = fakeDeps(async () => { calls++; return { reply: "x", follow_up: "y", send_photo: false, interested: true, action: "send_link" }; });
   const id = await open(deps);
-  await send(deps, id);
+  for (let i = 1; i < LIMITS.minTurnsBeforeLink; i++) await send(deps, id);
   const closing = await send(deps, id);
   assert.ok(closing.body.link);
   assert.equal(closing.body.ended, true);
-  assert.equal(calls, 2);
+  assert.equal(calls, LIMITS.minTurnsBeforeLink);
   assert.equal((await send(deps, id)).body.ended, true);
-  assert.equal(calls, 2);
+  assert.equal(calls, LIMITS.minTurnsBeforeLink);
 });
 
 test("the chat runs on Sonnet unless overridden", () => {
@@ -194,6 +194,7 @@ test("a link after an earlier photo does not repeat it", async () => {
     : answer({ follow_up: "jdeš?", interested: true, action: "send_link" })()), { ...TEST_PAGE, teasePhotos: PHOTOS });
   const id = await open(deps);
   assert.ok((await send(deps, id)).body.photo);
+  for (let i = 2; i < LIMITS.minTurnsBeforeLink; i++) assert.equal((await send(deps, id)).body.photo, null);
   const closing = await send(deps, id);
   assert.ok(closing.body.link);
   assert.equal(closing.body.photo, null);
