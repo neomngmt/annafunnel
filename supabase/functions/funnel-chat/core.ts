@@ -117,6 +117,13 @@ export function asksForLink(text: string, language: Page["language"]): boolean {
     : /only\s?fans|where can i see/i.test(text);
 }
 
+// Someone who is openly sexual or asks for photos gets her OnlyFans straight away.
+export function isOpenlySexual(text: string, language: Page["language"]): boolean {
+  return language === "cs"
+    ? /hon[ií](m|t|š|s)|onanuj|nadr[zž]en|vzru[sš]en|stoj[ií] mi|\bpt[aá]k|\bp[ée]ro\b|\bkoz(y|i|ičky)\b|\bprs(a|ou)\b|\bnah[aáeé]|fotk|fotečk|nud(es|ky)|\bsex|[sš]uk|ukaž (se|mi)|chci t[eě] vid[eě]t|chci vid[eě]t/i.test(text)
+    : /jerk|horny|hard for|\bnudes?\b|naked|\bpics?\b|photos?|\bsex|show me|wanna see|want to see/i.test(text);
+}
+
 // The link only goes to someone who has shown he is into it, however long the
 // chat has run. Small talk alone never earns it.
 export function shouldSendLink(answer: ModelAnswer, turns: number, linkSent: boolean, asked = false): boolean {
@@ -305,7 +312,8 @@ async function message(body: Record<string, unknown>, deps: Deps): Promise<Resul
 
   const turns = session.turns + 1;
   // The first answer is always the same: find out what he is doing before anything else.
-  if (turns === 1 && !asksForLink(text, page.language)) {
+  const asked = asksForLink(text, page.language) || isOpenlySexual(text, page.language);
+  if (turns === 1 && !asked) {
     await deps.updateSession(session.id, { turns, linkSent: false, photoSent: session.photoSent, blocked: false });
     return { status: 200, body: { reply: t.whatNow, link: null, photo: null, ended: false } };
   }
@@ -315,7 +323,6 @@ async function message(body: Record<string, unknown>, deps: Deps): Promise<Resul
   const action: Action = result?.action ?? "continue";
   const reply = result ? cleanReply(result.reply) || t.refusal : t.refusal;
 
-  const asked = asksForLink(text, page.language);
   const link = result && shouldSendLink(result, turns, session.linkSent, asked) ? pickLink(page, session.source) : null;
   const stopped = action === "stop";
   // One photo per chat when the conversation gets there, and always before the link.

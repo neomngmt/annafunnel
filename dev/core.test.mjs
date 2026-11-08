@@ -3,7 +3,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
-  asksForLink, buildSystemPrompt, cleanHistory, cleanReply, handleRequest, LIMITS, modelRequest, pickLink, pickTeasePhoto, readModelResponse, statesMinorAge,
+  asksForLink, isOpenlySexual, buildSystemPrompt, cleanHistory, cleanReply, handleRequest, LIMITS, modelRequest, pickLink, pickTeasePhoto, readModelResponse, statesMinorAge,
 } from "../supabase/functions/funnel-chat/core.ts";
 import { fakeDeps, TEST_PAGE } from "./fake.mjs";
 
@@ -301,4 +301,18 @@ test("the first answer is always the fixed what-are-you-doing question", async (
   assert.equal(calls, 0);
   await send(deps, id, "koukam na netflix");
   assert.equal(calls, 1);
+});
+
+test("an openly sexual message gets the link straight away", async () => {
+  const deps = fakeDeps(answer({ follow_up: "pojď na of", interested: true, action: "send_link" }), { ...TEST_PAGE, teasePhotos: PHOTOS });
+  const id = await open(deps);
+  const first = await send(deps, id, "honím si ho u tvých fotek");
+  assert.ok(first.body.link);
+  assert.ok(first.body.photo);
+  assert.equal(first.body.ended, true);
+});
+
+test("openly sexual detection", () => {
+  for (const s of ["honim", "honím si ho", "jsem nadrzenej", "posli fotky", "chci tě vidět nahou", "ukaž se"]) assert.ok(isOpenlySexual(s, "cs"), s);
+  for (const s of ["z instace", "koukam na netflix", "jsem v praci", "honza mi psal"]) assert.ok(!isOpenlySexual(s, "cs"), s);
 });
