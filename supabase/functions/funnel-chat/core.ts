@@ -205,7 +205,7 @@ export const OUTPUT_SCHEMA = {
 };
 
 // Shared by the edge function and the local preview, so both ask Claude the same way.
-export function modelRequest(system: string, messages: ChatMessage[], model = "claude-sonnet-5-5") {
+export function modelRequest(system: string, messages: ChatMessage[], model = "claude-opus-5-5") {
   return {
     model,
     max_tokens: 2000,

@@ -117,8 +117,8 @@ test("the chat ends with the link, with no further model calls", async () => {
   assert.equal(calls, LIMITS.minTurnsBeforeLink - 1);
 });
 
-test("the chat runs on Sonnet unless overridden", () => {
-  assert.equal(modelRequest("s", []).model, "claude-sonnet-5-5");
+test("the chat runs on Opus unless overridden", () => {
+  assert.equal(modelRequest("s", []).model, "claude-opus-5-5");
   assert.equal(modelRequest("s", [], "claude-haiku-5-5").model, "claude-haiku-5-5");
 });
 
