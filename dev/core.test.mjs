@@ -46,9 +46,11 @@ test("a removed or unknown page returns 404", async () => {
   assert.equal(r.status, 404);
 });
 
-test("the AI badge is hardcoded in the page", () => {
+test("the AI notice is hardcoded on the start screen", () => {
   const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
-  assert.match(html, /<span class="ai-badge">AI<\/span>/);
+  assert.match(html, /<p class="gate-ai" id="gateAi"><\/p>/);
+  assert.match(html, /gateAi: "Píšeš si s AI"/);
+  assert.match(html, /gateAi: "You are chatting with an AI"/);
 });
 
 test("the prompt forbids claiming to be human", () => {
