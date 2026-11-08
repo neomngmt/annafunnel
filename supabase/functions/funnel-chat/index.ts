@@ -17,16 +17,23 @@ import Anthropic from "npm:@anthropic-ai/sdk";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { handleRequest, modelRequest, readModelResponse, type Deps, type Page, type Session } from "./core.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": Deno.env.get("FUNNEL_ALLOWED_ORIGIN") || "*",
-  "Access-Control-Allow-Headers": "content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+// FUNNEL_ALLOWED_ORIGIN can list several origins, separated by commas.
+const allowedOrigins = (Deno.env.get("FUNNEL_ALLOWED_ORIGIN") || "*").split(",").map((o) => o.trim());
 
-function jsonResponse(body: unknown, status = 200) {
+function corsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+    "Access-Control-Allow-Headers": "content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Vary": "Origin",
+  };
+}
+
+function jsonResponse(req: Request, body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
   });
 }
 
@@ -110,15 +117,15 @@ const deps: Deps = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   try {
     const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim();
     const { status, body } = await handleRequest(await req.json(), ip, deps);
-    return jsonResponse(body, status);
+    return jsonResponse(req, body, status);
   } catch (e) {
     console.error("funnel-chat failed", e);
-    return jsonResponse({ error: "Chat is unavailable" }, 500);
+    return jsonResponse(req, { error: "Chat is unavailable" }, 500);
   }
 });
