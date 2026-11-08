@@ -21,9 +21,9 @@ const CHATS = [
   ["z instace", "jsem v praci"],
   ["z reels", "nic moc, nudim se doma"],
 ];
-const VARIANTS = [["claude-sonnet-5-5", "low"], ["claude-sonnet-5-5", "medium"], ["claude-opus-5-5", "low"], ["claude-opus-5-5", "medium"]];
+const VARIANTS = [["claude-sonnet-5-5", "low"], ["claude-opus-5-5", "low"]];
 
-const client = new Anthropic();
+const client = new Anthropic({ timeout: 40000, maxRetries: 1 });
 for (const [model, effort] of VARIANTS) {
   console.log(`\n=== ${model} ${effort}`);
   for (const [a, b] of CHATS) {
