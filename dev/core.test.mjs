@@ -15,6 +15,12 @@ async function open(deps, source = "ig") {
   return r.body.sessionId;
 }
 const send = (deps, sessionId, text = "cau") => handleRequest({ action: "message", sessionId, text, history: [] }, "1.1.1.1", deps);
+// The first answer is fixed and never reaches the model, so most chat tests start after it.
+async function openPastFirst(deps) {
+  const id = await open(deps);
+  await send(deps, id);
+  return id;
+}
 
 test("a chat cannot open without the age step", async () => {
   const r = await handleRequest({ action: "start", slug: "test" }, "1.1.1.1", fakeDeps(said("continue")));
@@ -101,14 +107,14 @@ test("the link waits for the minimum turns, then is sent once", async () => {
 test("the chat ends with the link, with no further model calls", async () => {
   let calls = 0;
   const deps = fakeDeps(async () => { calls++; return { reply: "x", follow_up: "y", send_photo: false, interested: true, action: "send_link" }; });
-  const id = await open(deps);
-  for (let i = 1; i < LIMITS.minTurnsBeforeLink; i++) await send(deps, id);
+  const id = await openPastFirst(deps);
+  for (let i = 2; i < LIMITS.minTurnsBeforeLink; i++) await send(deps, id);
   const closing = await send(deps, id);
   assert.ok(closing.body.link);
   assert.equal(closing.body.ended, true);
-  assert.equal(calls, LIMITS.minTurnsBeforeLink);
+  assert.equal(calls, LIMITS.minTurnsBeforeLink - 1);
   assert.equal((await send(deps, id)).body.ended, true);
-  assert.equal(calls, LIMITS.minTurnsBeforeLink);
+  assert.equal(calls, LIMITS.minTurnsBeforeLink - 1);
 });
 
 test("the chat runs on Sonnet unless overridden", () => {
@@ -156,7 +162,7 @@ test("the chat does not open with a photo", async () => {
 
 test("the photo comes when the chat gets there, only once, and without the link", async () => {
   const deps = fakeDeps(answer({ send_photo: true }), { ...TEST_PAGE, teasePhotos: PHOTOS });
-  const id = await open(deps);
+  const id = await openPastFirst(deps);
   const first = await send(deps, id);
   assert.ok(PHOTOS.includes(first.body.photo));
   assert.equal(first.body.link, null);
@@ -192,9 +198,9 @@ test("a link after an earlier photo does not repeat it", async () => {
   const deps = fakeDeps(async () => (++turn === 1
     ? answer({ send_photo: true })()
     : answer({ follow_up: "jdeš?", interested: true, action: "send_link" })()), { ...TEST_PAGE, teasePhotos: PHOTOS });
-  const id = await open(deps);
+  const id = await openPastFirst(deps);
   assert.ok((await send(deps, id)).body.photo);
-  for (let i = 2; i < LIMITS.minTurnsBeforeLink; i++) assert.equal((await send(deps, id)).body.photo, null);
+  for (let i = 3; i < LIMITS.minTurnsBeforeLink; i++) assert.equal((await send(deps, id)).body.photo, null);
   const closing = await send(deps, id);
   assert.ok(closing.body.link);
   assert.equal(closing.body.photo, null);
@@ -282,4 +288,17 @@ test("URLs are stripped from replies and only OnlyFans links are sent", () => {
   assert.equal(pickLink(TEST_PAGE, "unknown"), "https://onlyfans.com/test");
   assert.equal(pickLink({ ...TEST_PAGE, ofLinks: { default: "https://oopsie.bio/anna" } }, "ig"), "https://oopsie.bio/anna");
   assert.equal(pickLink({ ...TEST_PAGE, ofLinks: { default: "https://oopsie.bio.evil.example/x" } }, "ig"), null);
+});
+
+test("the first answer is always the fixed what-are-you-doing question", async () => {
+  let calls = 0;
+  const deps = fakeDeps(async () => { calls++; return { reply: "x", follow_up: "", send_photo: true, interested: true, action: "send_link" }; }, { ...TEST_PAGE, teasePhotos: PHOTOS });
+  const id = await open(deps);
+  const first = await send(deps, id, "z instace");
+  assert.equal(first.body.reply, "ahaaa tak jo, a copak teď děláš?");
+  assert.equal(first.body.photo, null);
+  assert.equal(first.body.link, null);
+  assert.equal(calls, 0);
+  await send(deps, id, "koukam na netflix");
+  assert.equal(calls, 1);
 });

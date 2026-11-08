@@ -60,12 +60,14 @@ const STRINGS = {
     limit: "Tady už chat končí. Díky za pokec.",
     refusal: "Tohle radši nechme být. O čem si chceš povídat dál?",
     closing: "píšu si s lidma hlavně jen na of, tak přijď",
+    whatNow: "ahaaa tak jo, a copak teď děláš?",
   },
   en: {
     minor: "This chat is for adults only, so we have to stop here. Take care.",
     limit: "This chat ends here. Thanks for talking.",
     refusal: "Let's leave that one. What else do you want to talk about?",
     closing: "i really only chat with people on of, so come over",
+    whatNow: "ahh okay, and what are you up to right now?",
   },
 };
 
@@ -155,13 +157,14 @@ Honesty:
 
 Style:
 - ${language}
+- Plain, simple, grammatically correct sentences that a real girl would text. No clever wordplay, puns or twisted metaphors: if a line needs thinking about, it is wrong, so say less instead. Read the reply back once and make sure it makes sense.
 - One or two short sentences. Playful and flirty, usually ending on a question. Teasing and suggestive is fine, explicit is not: no graphic sexual content and no descriptions of arousal or bodies. If they get sexual, tease back without details and steer towards her OnlyFans. No sexual roleplay here.
 - Never ask for personal data or money, and never quote prices.${page.style ? `\n- How she texts, follow this closely: ${page.style}` : ""}
 
 This should read like a normal conversation between a fan and the model he likes, but your goal is always to pitch her OnlyFans. Answer what they actually say, naturally and in a few words, and never interrogate them. Keep pulling the conversation back towards her OnlyFans in nearly every message, with hints that the good stuff is there, and let it get warmer as you go.
 
 How the chat runs:
-1. After they answer your opening question, react in a few words and ask what they are up to right now, casually, like "copak teď děláš?". Ask it once only, and skip it if they already said.
+1. Your first reply has already been sent for you: a short "ok" and the question what they are up to right now. Never ask it again.
 2. Then follow what they told you:
    - Free and in the mood (at home, in bed, bored, alone, or already saying they are turned on or touching themselves): turn warmer and more suggestive straight away, tease that she shows much more on her OnlyFans, and build it up over the next couple of messages before the link. Still no explicit details.
    - Busy (at work, at school, driving, with people): tone it down to light flirting, no sexual talk. Say it is a shame they cannot chat properly now and that you can write when they have time, and that she really chats on her OnlyFans, so they can message her there whenever they are free. Keep it light for a couple of messages, then move to the link.
@@ -301,6 +304,11 @@ async function message(body: Record<string, unknown>, deps: Deps): Promise<Resul
   if (session.linkSent || session.turns >= LIMITS.maxTurns) return { status: 200, body: { reply: t.limit, ended: true } };
 
   const turns = session.turns + 1;
+  // The first answer is always the same: find out what he is doing before anything else.
+  if (turns === 1 && !asksForLink(text, page.language)) {
+    await deps.updateSession(session.id, { turns, linkSent: false, photoSent: session.photoSent, blocked: false });
+    return { status: 200, body: { reply: t.whatNow, link: null, photo: null, ended: false } };
+  }
   const messages = [...cleanHistory(body.history), { role: "user" as const, content: text }];
   const result = await deps.callModel(buildSystemPrompt(page, turns, session.photoSent), messages);
   // null means Claude declined. The chat continues, but nothing counts as interest.
