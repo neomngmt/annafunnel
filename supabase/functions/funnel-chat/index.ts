@@ -109,6 +109,12 @@ const deps: Deps = {
     if (error) throw error;
   },
 
+  async saveMessages(sessionId, rows) {
+    const { error } = await supabase.from("funnel_messages")
+      .insert(rows.map((r) => ({ session_id: sessionId, role: r.role, content: r.content, photo: r.photo ?? null, link: r.link ?? null })));
+    if (error) throw error;
+  },
+
   async callModel(system, messages) {
     const request = modelRequest(system, messages, Deno.env.get("FUNNEL_MODEL") || undefined);
     return readModelResponse(await anthropic.beta.messages.create(request));

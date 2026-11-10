@@ -47,12 +47,25 @@ export type Deps = {
   createSession: (s: Session) => Promise<void>;
   getSession: (id: string) => Promise<Session | null>;
   updateSession: (id: string, patch: Partial<Session>) => Promise<void>;
+  // Optional: keeps the chat text so the owner can read the chats.
+  saveMessages?: (sessionId: string, rows: SavedMessage[]) => Promise<void>;
   callModel: (system: string, messages: ChatMessage[]) => Promise<ModelAnswer | null>;
   ipSalt: string;
   dailySessionCap?: number;
 };
 
 export type Result = { status: number; body: Record<string, unknown> };
+export type SavedMessage = { role: "user" | "assistant"; content: string; photo?: string | null; link?: string | null };
+
+// A failed save must never break the chat.
+async function save(deps: Deps, sessionId: string, rows: SavedMessage[]) {
+  if (!deps.saveMessages) return;
+  try {
+    await deps.saveMessages(sessionId, rows);
+  } catch (e) {
+    console.error("saving chat messages failed", e);
+  }
+}
 
 const STRINGS = {
   cs: {
@@ -286,6 +299,7 @@ async function start(body: Record<string, unknown>, ip: string, deps: Deps): Pro
     blocked: false,
   };
   await deps.createSession(session);
+  await save(deps, session.id, [{ role: "assistant", content: page.opener }]);
   return {
     status: 200,
     body: { sessionId: session.id, name: page.name, language: page.language, photoUrl: page.photoUrl, opener: page.opener },
@@ -293,6 +307,20 @@ async function start(body: Record<string, unknown>, ip: string, deps: Deps): Pro
 }
 
 async function message(body: Record<string, unknown>, deps: Deps): Promise<Result> {
+  const result = await answer(body, deps);
+  if (result.status === 200 && typeof body.sessionId === "string" && typeof body.text === "string") {
+    const b = result.body;
+    const rows: SavedMessage[] = [{ role: "user", content: body.text.trim() }];
+    const link = typeof b.link === "string" ? b.link : null;
+    const photo = typeof b.photo === "string" ? b.photo : null;
+    if (typeof b.reply === "string") rows.push({ role: "assistant", content: b.reply, photo, link: b.followUp ? null : link });
+    if (typeof b.followUp === "string") rows.push({ role: "assistant", content: b.followUp, link });
+    await save(deps, body.sessionId, rows);
+  }
+  return result;
+}
+
+async function answer(body: Record<string, unknown>, deps: Deps): Promise<Result> {
   const session = typeof body.sessionId === "string" ? await deps.getSession(body.sessionId) : null;
   if (!session) return { status: 404, body: { error: "Session not found" } };
   const page = await deps.getPage(session.slug);

@@ -316,3 +316,24 @@ test("openly sexual detection", () => {
   for (const s of ["honim", "honím si ho", "jsem nadrzenej", "posli fotky", "chci tě vidět nahou", "ukaž se"]) assert.ok(isOpenlySexual(s, "cs"), s);
   for (const s of ["z instace", "koukam na netflix", "jsem v praci", "honza mi psal"]) assert.ok(!isOpenlySexual(s, "cs"), s);
 });
+
+test("the chat text is saved for the owner, including the closing line and link", async () => {
+  const deps = fakeDeps(answer({ follow_up: "pojď na of", interested: true, action: "send_link" }));
+  const id = await open(deps);
+  await send(deps, id, "z instace");
+  await send(deps, id, "honím si ho");
+  const rows = deps.saved.map((r) => [r.role, r.content, r.link || null]);
+  assert.deepEqual(rows[0], ["assistant", TEST_PAGE.opener, null]);
+  assert.deepEqual(rows[1], ["user", "z instace", null]);
+  assert.deepEqual(rows[2], ["assistant", "ahaaa tak jo, a copak teď děláš?", null]);
+  assert.equal(rows[3][1], "honím si ho");
+  assert.equal(rows.at(-1)[1], "pojď na of");
+  assert.ok(rows.at(-1)[2]);
+});
+
+test("a failed save does not break the chat", async () => {
+  const deps = fakeDeps(answer({}));
+  deps.saveMessages = async () => { throw new Error("db down"); };
+  const id = await open(deps);
+  assert.equal((await send(deps, id, "z instace")).status, 200);
+});

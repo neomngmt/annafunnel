@@ -30,6 +30,10 @@ export function fakeDeps(callModel, page = TEST_PAGE) {
     updateSession: async (id, patch) => {
       Object.assign(sessions.get(id), patch);
     },
+    saved: [],
+    async saveMessages(sessionId, rows) {
+      this.saved.push(...rows.map((r) => ({ sessionId, ...r })));
+    },
     callModel,
   };
 }
