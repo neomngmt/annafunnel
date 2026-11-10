@@ -43,7 +43,7 @@ test("Anna's start screen does not wait for the server", () => {
 
 test("the start screen states the 18+ condition", () => {
   const html = readFileSync(new URL("../public/index.html", import.meta.url), "utf8");
-  assert.match(html, /gateNote: "Pokračováním potvrzuješ, že je ti 18\+\."/);
+  assert.match(html, /gateNote: "Pokračováním potvrzuješ, že je ti 18\+\. Konverzaci ukládáme 30 dní/);
   assert.match(html, /ageConfirmed: true/);
 });
 
